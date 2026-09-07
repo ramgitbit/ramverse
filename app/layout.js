@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "RamVerse OS",
-  description: "Dual-Degree & Career Acceleration Engine",
+  description: "Career Acceleration Engine",
 };
 
 export default function RootLayout({ children }) {
