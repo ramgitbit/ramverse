@@ -13,12 +13,18 @@ import {
   Sparkles, 
   Trophy, 
   GraduationCap, 
-  Send 
+  Send,
+  Mic,
+  MicOff
 } from "lucide-react";
 
 export default function RamVerse() {
   const [activeTab, setActiveTab] = useState("all");
   const [commandInput, setCommandInput] = useState("");
+
+  // Voice Controller States
+  const [listening, setListening] = useState(false);
+  const [statusText, setStatusText] = useState("");
 
   // Sample State Management
   const [tasks, setTasks] = useState([
@@ -38,12 +44,74 @@ export default function RamVerse() {
     { name: "LeetCode Weekly Contest 400", platform: "LeetCode", time: "Sunday 8:00 AM" }
   ];
 
+  // Voice Action Listener Handler
+  const startListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Browser does not support Speech Recognition. Use Chrome.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      setListening(true);
+      setStatusText("Listening for system command...");
+    };
+
+    recognition.onresult = async (event) => {
+      const transcript = event.results[0][0].transcript.toLowerCase();
+      setStatusText(`Command Received: "${transcript}"`);
+      setListening(false);
+      
+      // Execute System/Laptop Action via Agent
+      await handleVoiceAction(transcript);
+    };
+
+    recognition.onerror = () => {
+      setListening(false);
+      setStatusText("Voice recognition error.");
+    };
+
+    recognition.start();
+  };
+
+  // Local Python Agent Call
+  const handleVoiceAction = async (command) => {
+    let payload = null;
+
+    if (command.includes("open vs code") || command.includes("open code")) {
+      payload = { action: "open_app", target: "vs code" };
+    } else if (command.includes("open chrome")) {
+      payload = { action: "open_app", target: "chrome" };
+    } else if (command.includes("open calculator") || command.includes("calc")) {
+      payload = { action: "open_app", target: "calculator" };
+    }
+
+    if (payload) {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        setStatusText(`Agent Response: ${data.message}`);
+      } catch (err) {
+        setStatusText("Error connecting to local Python agent. Is agent.py running?");
+      }
+    } else {
+      setStatusText("Unrecognized local command.");
+    }
+  };
+
   // AI Command Parser Handler
   const handleCommandSubmit = (e) => {
     e.preventDefault();
     if (!commandInput.trim()) return;
 
-    // Simple Rule-based Parsing Demo (Can be connected to Gemini API)
     const newTask = {
       id: Date.now(),
       title: commandInput,
@@ -95,9 +163,31 @@ export default function RamVerse() {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Column: AI Bar & Primary Trackers (8 Cols) */}
+        {/* Left Column: AI Bar, Voice Agent & Primary Trackers (8 Cols) */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           
+          {/* Integrated System Voice Control Widget */}
+          <div className="bg-slate-800/50 border border-indigo-500/30 rounded-2xl p-4 shadow-xl backdrop-blur flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={startListening}
+                className={`p-3 rounded-xl font-semibold flex items-center gap-2 transition ${
+                  listening ? "bg-red-500 animate-pulse text-white shadow-lg shadow-red-500/40" : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30"
+                }`}
+              >
+                {listening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                <span className="text-sm">{listening ? "Listening..." : "Voice Action"}</span>
+              </button>
+              <p className="text-xs text-slate-400">
+                {statusText || "Click to voice control system (e.g. 'Open VS Code', 'Open Chrome')"}
+              </p>
+            </div>
+            <span className="text-[10px] bg-slate-900 border border-slate-700 text-indigo-300 px-2.5 py-1 rounded-full font-mono">
+              Agent: 127.0.0.1:8000
+            </span>
+          </div>
+
           {/* AI Command Input */}
           <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-4 shadow-xl backdrop-blur">
             <form onSubmit={handleCommandSubmit} className="flex items-center gap-3">
