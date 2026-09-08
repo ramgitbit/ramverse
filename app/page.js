@@ -44,6 +44,21 @@ export default function RamVerse() {
     { name: "LeetCode Weekly Contest 400", platform: "LeetCode", time: "Sunday 8:00 AM" }
   ];
 
+  // System Wide Voice Action Handler
+  const handleVoiceAction = async (command) => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "system_control", target: command }),
+      });
+      const data = await res.json();
+      setStatusText(`Agent: ${data.message}`);
+    } catch (err) {
+      setStatusText("Error: Make sure python agent.py is running!");
+    }
+  };
+
   // Voice Action Listener Handler
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -66,7 +81,7 @@ export default function RamVerse() {
       setStatusText(`Command Received: "${transcript}"`);
       setListening(false);
       
-      // Execute System/Laptop Action via Agent
+      // Execute System/Laptop Action via Upgraded Agent
       await handleVoiceAction(transcript);
     };
 
@@ -76,35 +91,6 @@ export default function RamVerse() {
     };
 
     recognition.start();
-  };
-
-  // Local Python Agent Call
-  const handleVoiceAction = async (command) => {
-    let payload = null;
-
-    if (command.includes("open vs code") || command.includes("open code")) {
-      payload = { action: "open_app", target: "vs code" };
-    } else if (command.includes("open chrome")) {
-      payload = { action: "open_app", target: "chrome" };
-    } else if (command.includes("open calculator") || command.includes("calc")) {
-      payload = { action: "open_app", target: "calculator" };
-    }
-
-    if (payload) {
-      try {
-        const res = await fetch("http://127.0.0.1:8000/execute", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        setStatusText(`Agent Response: ${data.message}`);
-      } catch (err) {
-        setStatusText("Error connecting to local Python agent. Is agent.py running?");
-      }
-    } else {
-      setStatusText("Unrecognized local command.");
-    }
   };
 
   // AI Command Parser Handler
@@ -180,7 +166,7 @@ export default function RamVerse() {
                 <span className="text-sm">{listening ? "Listening..." : "Voice Action"}</span>
               </button>
               <p className="text-xs text-slate-400">
-                {statusText || "Click to voice control system (e.g. 'Open VS Code', 'Open Chrome')"}
+                {statusText || "Click to voice control system (e.g. 'Volume up', 'Take screenshot', 'Lock PC')"}
               </p>
             </div>
             <span className="text-[10px] bg-slate-900 border border-slate-700 text-indigo-300 px-2.5 py-1 rounded-full font-mono">
