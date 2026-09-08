@@ -44,7 +44,7 @@ export default function RamVerse() {
     { name: "LeetCode Weekly Contest 400", platform: "LeetCode", time: "Sunday 8:00 AM" }
   ];
 
-  // System Wide Voice Action Handler
+  // Local Python Agent Call
   const handleVoiceAction = async (command) => {
     try {
       const res = await fetch("http://127.0.0.1:8000/execute", {
@@ -55,7 +55,7 @@ export default function RamVerse() {
       const data = await res.json();
       setStatusText(`Agent: ${data.message}`);
     } catch (err) {
-      setStatusText("Error: Make sure python agent.py is running!");
+      setStatusText("Error connecting to local Python agent. Is agent.py running?");
     }
   };
 
